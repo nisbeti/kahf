@@ -209,6 +209,7 @@
     font-size: .42em;
     line-height: 1;
   }
+  :root[data-font="hafs"] .when-tanzil { display: none; }
   :root[data-font="indopak"] .when-amiri { display: none; }
   :root[data-font="indopak"] .when-indopak { display: revert; }
   :root[data-font="indopak"] .page.quran.arabic .text {
@@ -588,6 +589,14 @@ function markJalalahArabic(text) {
   }).join("");
 }
 
+/* Tanzil and the King Fahd Complex (KFGQPC) font encode two marks differently. Tanzil writes sukun as U+0652
+   and the rounded zero over a silent alif (as in قَالُوا۟) as U+06DF. The KFGQPC font expects sukun as U+06E1 and
+   the rounded zero as U+0652, and draws U+06DF as a dotted-circle placeholder. Convert for the Uthmani view only;
+   Amiri keeps the Tanzil text as is. Order matters: move sukun out of U+0652 before reusing it. */
+function toQpcMarks(text) {
+  return text.replace(/\u0652/g, "\u06E1").replace(/\u06DF/g, "\u0652");
+}
+
 function markJalalahEnglish(text) {
   return text.replace(/\bAllah\b/g, '<span class="jalalah">Allah</span>');
 }
@@ -640,7 +649,8 @@ function buildVersePage(verses, position, total, lang) {
       .map(verse => markJalalahArabic(verse.ar_indopak).replace(/[\uF500-\uF5FF]$/, sign => `<span ${verseAttrs(verse.n)}>${sign}</span>`))
       .join(" ");
     body = `
-      <div class="when-amiri">${isOpening ? `<h2 class="basmalah">${markJalalahArabic(KAHF.basmalah_ar)}</h2>` : ""}<p>${uthmani}</p></div>
+      <div class="when-amiri when-tanzil">${isOpening ? `<h2 class="basmalah">${markJalalahArabic(KAHF.basmalah_ar)}</h2>` : ""}<p>${uthmani}</p></div>
+      <div class="when-hafs">${isOpening ? `<h2 class="basmalah">${markJalalahArabic(toQpcMarks(KAHF.basmalah_ar))}</h2>` : ""}<p>${toQpcMarks(uthmani)}</p></div>
       <div class="when-indopak">${isOpening ? `<h2 class="basmalah">${markJalalahArabic(KAHF.basmalah_ar_indopak)}</h2>` : ""}<p>${indopak}</p></div>`;
   } else {
     const english = verses.map(verse => `<p><span class="verse-num" ${verseAttrs(verse.n)}>${verse.n}</span>${markJalalahEnglish(verse.en)}</p>`).join("");
